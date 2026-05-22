@@ -81,6 +81,17 @@
       line-height: 1.5;
     }
 
+    #sample-btn {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s;
+    }
+    #sample-btn:hover { color: #aaa; }
+
     .start-btn {
       padding: 13px;
       background: #e8e8e8;
@@ -260,7 +271,10 @@
   </div>
 
   <div>
-    <label for="interview-prompt">What would you like to practice?</label>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+      <label for="interview-prompt" style="margin-bottom:0;">What would you like to practice?</label>
+      <button id="sample-btn" type="button">Try a sample</button>
+    </div>
     <textarea id="interview-prompt" placeholder="e.g. Senior software engineer at a fintech startup, focusing on system design and leadership…"></textarea>
     <p class="hint" style="margin-top:8px;">Describe the role, company, or type of interview. The more detail you give, the more targeted the questions.</p>
   </div>
@@ -310,7 +324,23 @@
   let streaming = false;
 
   const interviewPrompt = document.getElementById("interview-prompt");
+  const sampleBtn = document.getElementById("sample-btn");
   const startBtn = document.getElementById("start-btn");
+
+  const SAMPLES = [
+    "Senior software engineer at a Series B fintech startup. Focus on system design, distributed systems, and past experience leading technical projects.",
+    "Product manager role at a large tech company. Mix of product sense, analytical, and behavioral questions. I want to practice structuring my answers clearly.",
+    "Entry-level data scientist at a healthcare company. Focus on statistics fundamentals, SQL, Python, and how I'd approach real-world data problems.",
+    "Engineering manager at a mid-size SaaS company. Focus on leadership, managing conflict, cross-functional collaboration, and how I grow my team.",
+    "Frontend engineer at a design-focused startup. Focus on React, performance, accessibility, and building great user experiences.",
+  ];
+  let sampleIndex = 0;
+
+  sampleBtn.addEventListener("click", () => {
+    interviewPrompt.value = SAMPLES[sampleIndex % SAMPLES.length];
+    sampleIndex++;
+    startBtn.disabled = false;
+  });
   const setupEl = document.getElementById("setup");
   const chatEl = document.getElementById("chat");
   const messagesEl = document.getElementById("messages");
