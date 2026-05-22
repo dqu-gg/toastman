@@ -380,44 +380,54 @@
     recognition.interimResults = true;
     recognition.lang = "en-US";
 
-    let baseText = "";
-
-    recognition.onstart = () => {
-      recognizing = true;
-      micBtn.classList.add("listening");
-      baseText = userInput.value;
-    };
+    let micActive = false;
+    let accumulatedText = "";
 
     recognition.onresult = (e) => {
       let interim = "";
-      let final = "";
       for (const result of e.results) {
-        if (result.isFinal) final += result[0].transcript;
-        else interim += result[0].transcript;
+        if (result.isFinal) {
+          accumulatedText = (accumulatedText + " " + result[0].transcript).trim();
+        } else {
+          interim += result[0].transcript;
+        }
       }
-      userInput.value = (baseText + (baseText && (final || interim) ? " " : "") + (final || interim)).trim();
+      userInput.value = interim ? (accumulatedText + " " + interim).trim() : accumulatedText;
       userInput.style.height = "44px";
       userInput.style.height = Math.min(userInput.scrollHeight, 180) + "px";
       sendBtn.disabled = !userInput.value.trim() || streaming;
     };
 
+    // onend fires after every session (including errors and natural pauses).
+    // If the user hasn't pressed stop, restart immediately to keep recording.
     recognition.onend = () => {
       recognizing = false;
-      micBtn.classList.remove("listening");
+      if (micActive) {
+        try { recognition.start(); } catch (_) {}
+      } else {
+        micBtn.classList.remove("listening");
+      }
     };
 
+    // Only stop on unrecoverable errors (permission denied).
+    // Transient errors (no-speech, network) let onend handle the retry.
     recognition.onerror = (e) => {
-      recognizing = false;
-      micBtn.classList.remove("listening");
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        micActive = false;
+      }
     };
 
     micBtn.addEventListener("click", () => {
       if (streaming) return;
-      if (recognizing) {
+      if (micActive) {
+        micActive = false;
         recognition.stop();
       } else {
+        micActive = true;
+        accumulatedText = userInput.value.trim();
+        micBtn.classList.add("listening");
         window.speechSynthesis.cancel();
-        recognition.start();
+        try { recognition.start(); } catch (_) {}
       }
     });
   } else {
@@ -488,6 +498,7 @@
     userInput.value = "";
     userInput.style.height = "44px";
     sendBtn.disabled = true;
+    recognition?.stop();
 
     addMessage("user", text);
     messages.push({ role: "user", content: text });
