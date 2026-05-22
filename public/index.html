@@ -75,24 +75,11 @@
       background: #2e2e30;
     }
 
-    .upload-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 12px;
-      background: #1a1a1c;
-      border: 1px dashed #2e2e30;
-      border-radius: 10px;
-      color: #aaa;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
+    .hint {
+      font-size: 0.8rem;
+      color: #555;
+      line-height: 1.5;
     }
-    .upload-btn:hover { border-color: #555; color: #e8e8e8; }
-    #pdf-input { display: none; }
-    #pdf-status { font-size: 0.82rem; color: #5eba7d; text-align: center; min-height: 1.2em; }
 
     .start-btn {
       padding: 13px;
@@ -273,23 +260,9 @@
   </div>
 
   <div>
-    <label for="resume-text">Paste your resume</label>
-    <textarea id="resume-text" placeholder="Copy and paste your resume text here…"></textarea>
-  </div>
-
-  <div class="divider">or upload a PDF</div>
-
-  <div>
-    <label for="pdf-input" class="upload-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/>
-        <line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      Upload PDF
-    </label>
-    <input type="file" id="pdf-input" accept=".pdf" />
-    <p id="pdf-status"></p>
+    <label for="interview-prompt">What would you like to practice?</label>
+    <textarea id="interview-prompt" placeholder="e.g. Senior software engineer at a fintech startup, focusing on system design and leadership…"></textarea>
+    <p class="hint" style="margin-top:8px;">Describe the role, company, or type of interview. The more detail you give, the more targeted the questions.</p>
   </div>
 
   <button class="start-btn" id="start-btn" disabled>Start Interview</button>
@@ -308,7 +281,7 @@
         </svg>
         Read aloud
       </button>
-      <button id="restart-btn">← New Resume</button>
+      <button id="restart-btn">← New Interview</button>
     </div>
   </div>
   <div id="messages"></div>
@@ -336,9 +309,7 @@
   let messages = [];
   let streaming = false;
 
-  const resumeText = document.getElementById("resume-text");
-  const pdfInput = document.getElementById("pdf-input");
-  const pdfStatus = document.getElementById("pdf-status");
+  const interviewPrompt = document.getElementById("interview-prompt");
   const startBtn = document.getElementById("start-btn");
   const setupEl = document.getElementById("setup");
   const chatEl = document.getElementById("chat");
@@ -424,42 +395,13 @@
     micBtn.title = "Speech recognition not supported in this browser";
   }
 
-  // Enable start button when there's resume content
-  function checkResume() {
-    startBtn.disabled = !resumeText.value.trim() && !resume;
-  }
-  resumeText.addEventListener("input", checkResume);
-
-  // PDF upload
-  pdfInput.addEventListener("change", async () => {
-    const file = pdfInput.files[0];
-    if (!file) return;
-    pdfStatus.textContent = "Parsing PDF…";
-    pdfStatus.style.color = "#888";
-    const form = new FormData();
-    form.append("pdf", file);
-    try {
-      const res = await fetch("/api/parse-pdf", { method: "POST", body: form });
-      const data = await res.json();
-      if (data.text) {
-        resumeText.value = data.text;
-        resume = data.text;
-        pdfStatus.textContent = "✓ PDF parsed successfully";
-        pdfStatus.style.color = "#5eba7d";
-        checkResume();
-      } else {
-        pdfStatus.textContent = "Failed to parse PDF — try pasting text instead";
-        pdfStatus.style.color = "#e05c5c";
-      }
-    } catch {
-      pdfStatus.textContent = "Upload failed — try pasting text instead";
-      pdfStatus.style.color = "#e05c5c";
-    }
+  interviewPrompt.addEventListener("input", () => {
+    startBtn.disabled = !interviewPrompt.value.trim();
   });
 
   // Start interview
   startBtn.addEventListener("click", () => {
-    resume = resumeText.value.trim() || resume;
+    resume = interviewPrompt.value.trim();
     if (!resume) return;
     messages = [];
     messagesEl.innerHTML = "";
@@ -474,11 +416,9 @@
     chatEl.style.display = "none";
     setupEl.style.display = "flex";
     resume = "";
-    resumeText.value = "";
-    pdfInput.value = "";
-    pdfStatus.textContent = "";
+    interviewPrompt.value = "";
     messages = [];
-    checkResume();
+    startBtn.disabled = true;
   });
 
   // Auto-resize textarea
