@@ -75,24 +75,22 @@
       background: #2e2e30;
     }
 
-    .upload-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      width: 100%;
-      padding: 12px;
-      background: #1a1a1c;
-      border: 1px dashed #2e2e30;
-      border-radius: 10px;
-      color: #aaa;
-      font-size: 0.9rem;
-      cursor: pointer;
-      transition: border-color 0.15s, color 0.15s;
+    .hint {
+      font-size: 0.8rem;
+      color: #555;
+      line-height: 1.5;
     }
-    .upload-btn:hover { border-color: #555; color: #e8e8e8; }
-    #pdf-input { display: none; }
-    #pdf-status { font-size: 0.82rem; color: #5eba7d; text-align: center; min-height: 1.2em; }
+
+    #sample-btn {
+      background: none;
+      border: none;
+      color: #555;
+      font-size: 0.8rem;
+      cursor: pointer;
+      padding: 0;
+      transition: color 0.15s;
+    }
+    #sample-btn:hover { color: #aaa; }
 
     .start-btn {
       padding: 13px;
@@ -218,6 +216,49 @@
     }
     #send-btn:hover { background: #fff; }
     #send-btn:disabled { background: #2a2a2c; color: #555; cursor: not-allowed; }
+
+    #mic-btn {
+      width: 44px;
+      height: 44px;
+      flex-shrink: 0;
+      background: #1a1a1c;
+      color: #aaa;
+      border: 1px solid #2e2e30;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #mic-btn:hover { color: #e8e8e8; border-color: #555; }
+    #mic-btn.listening {
+      background: #3a1a1a;
+      border-color: #e05c5c;
+      color: #e05c5c;
+      animation: pulse 1.2s ease-in-out infinite;
+    }
+    #mic-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(224, 92, 92, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(224, 92, 92, 0); }
+    }
+
+    #tts-toggle {
+      background: none;
+      border: 1px solid #2e2e30;
+      color: #666;
+      border-radius: 6px;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    #tts-toggle.active { color: #5eba7d; border-color: #5eba7d; }
+    #tts-toggle:hover { color: #e8e8e8; border-color: #555; }
   </style>
 </head>
 <body>
@@ -230,23 +271,12 @@
   </div>
 
   <div>
-    <label for="resume-text">Paste your resume</label>
-    <textarea id="resume-text" placeholder="Copy and paste your resume text here…"></textarea>
-  </div>
-
-  <div class="divider">or upload a PDF</div>
-
-  <div>
-    <label for="pdf-input" class="upload-btn">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-        <polyline points="17 8 12 3 7 8"/>
-        <line x1="12" y1="3" x2="12" y2="15"/>
-      </svg>
-      Upload PDF
-    </label>
-    <input type="file" id="pdf-input" accept=".pdf" />
-    <p id="pdf-status"></p>
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px;">
+      <label for="interview-prompt" style="margin-bottom:0;">What would you like to practice?</label>
+      <button id="sample-btn" type="button">Try a sample</button>
+    </div>
+    <textarea id="interview-prompt" placeholder="e.g. Senior software engineer at a fintech startup, focusing on system design and leadership…"></textarea>
+    <p class="hint" style="margin-top:8px;">Describe the role, company, or type of interview. The more detail you give, the more targeted the questions.</p>
   </div>
 
   <button class="start-btn" id="start-btn" disabled>Start Interview</button>
@@ -256,11 +286,29 @@
 <div id="chat">
   <div id="chat-header">
     <span class="title">Interview in Progress</span>
-    <button id="restart-btn">← New Resume</button>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button id="tts-toggle" title="Read responses aloud">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/>
+          <path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>
+          <path d="M15.54 8.46a5 5 0 0 1 0 7.07"/>
+        </svg>
+        Read aloud
+      </button>
+      <button id="restart-btn">← New Interview</button>
+    </div>
   </div>
   <div id="messages"></div>
   <div id="input-area">
-    <textarea id="user-input" placeholder="Type your answer…" rows="1"></textarea>
+    <textarea id="user-input" placeholder="Type your answer or press the mic…" rows="1"></textarea>
+    <button id="mic-btn" title="Hold to speak">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+        <line x1="12" y1="19" x2="12" y2="23"/>
+        <line x1="8" y1="23" x2="16" y2="23"/>
+      </svg>
+    </button>
     <button id="send-btn" disabled>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <line x1="22" y1="2" x2="11" y2="13"/>
@@ -275,53 +323,125 @@
   let messages = [];
   let streaming = false;
 
-  const resumeText = document.getElementById("resume-text");
-  const pdfInput = document.getElementById("pdf-input");
-  const pdfStatus = document.getElementById("pdf-status");
+  const interviewPrompt = document.getElementById("interview-prompt");
+  const sampleBtn = document.getElementById("sample-btn");
   const startBtn = document.getElementById("start-btn");
+
+  const SAMPLES = [
+    "Senior software engineer at a Series B fintech startup. Focus on system design, distributed systems, and past experience leading technical projects.",
+    "Product manager role at a large tech company. Mix of product sense, analytical, and behavioral questions. I want to practice structuring my answers clearly.",
+    "Entry-level data scientist at a healthcare company. Focus on statistics fundamentals, SQL, Python, and how I'd approach real-world data problems.",
+    "Engineering manager at a mid-size SaaS company. Focus on leadership, managing conflict, cross-functional collaboration, and how I grow my team.",
+    "Frontend engineer at a design-focused startup. Focus on React, performance, accessibility, and building great user experiences.",
+  ];
+  let sampleIndex = 0;
+
+  sampleBtn.addEventListener("click", () => {
+    interviewPrompt.value = SAMPLES[sampleIndex % SAMPLES.length];
+    sampleIndex++;
+    startBtn.disabled = false;
+  });
   const setupEl = document.getElementById("setup");
   const chatEl = document.getElementById("chat");
   const messagesEl = document.getElementById("messages");
   const userInput = document.getElementById("user-input");
   const sendBtn = document.getElementById("send-btn");
+  const micBtn = document.getElementById("mic-btn");
+  const ttsToggle = document.getElementById("tts-toggle");
   const restartBtn = document.getElementById("restart-btn");
 
-  // Enable start button when there's resume content
-  function checkResume() {
-    startBtn.disabled = !resumeText.value.trim() && !resume;
-  }
-  resumeText.addEventListener("input", checkResume);
+  // ── Text-to-speech ──
+  let ttsEnabled = false;
+  let currentUtterance = null;
 
-  // PDF upload
-  pdfInput.addEventListener("change", async () => {
-    const file = pdfInput.files[0];
-    if (!file) return;
-    pdfStatus.textContent = "Parsing PDF…";
-    pdfStatus.style.color = "#888";
-    const form = new FormData();
-    form.append("pdf", file);
-    try {
-      const res = await fetch("/api/parse-pdf", { method: "POST", body: form });
-      const data = await res.json();
-      if (data.text) {
-        resumeText.value = data.text;
-        resume = data.text;
-        pdfStatus.textContent = "✓ PDF parsed successfully";
-        pdfStatus.style.color = "#5eba7d";
-        checkResume();
-      } else {
-        pdfStatus.textContent = "Failed to parse PDF — try pasting text instead";
-        pdfStatus.style.color = "#e05c5c";
+  ttsToggle.addEventListener("click", () => {
+    ttsEnabled = !ttsEnabled;
+    ttsToggle.classList.toggle("active", ttsEnabled);
+    if (!ttsEnabled) window.speechSynthesis.cancel();
+  });
+
+  function speak(text) {
+    if (!ttsEnabled || !window.speechSynthesis) return;
+    window.speechSynthesis.cancel();
+    currentUtterance = new SpeechSynthesisUtterance(text);
+    currentUtterance.rate = 1.05;
+    currentUtterance.pitch = 1;
+    window.speechSynthesis.speak(currentUtterance);
+  }
+
+  // ── Speech-to-text ──
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  let recognizing = false;
+
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.lang = "en-US";
+
+    let micActive = false;
+    let accumulatedText = "";
+
+    recognition.onresult = (e) => {
+      let interim = "";
+      for (const result of e.results) {
+        if (result.isFinal) {
+          accumulatedText = (accumulatedText + " " + result[0].transcript).trim();
+        } else {
+          interim += result[0].transcript;
+        }
       }
-    } catch {
-      pdfStatus.textContent = "Upload failed — try pasting text instead";
-      pdfStatus.style.color = "#e05c5c";
-    }
+      userInput.value = interim ? (accumulatedText + " " + interim).trim() : accumulatedText;
+      userInput.style.height = "44px";
+      userInput.style.height = Math.min(userInput.scrollHeight, 180) + "px";
+      sendBtn.disabled = !userInput.value.trim() || streaming;
+    };
+
+    // onend fires after every session (including errors and natural pauses).
+    // If the user hasn't pressed stop, restart immediately to keep recording.
+    recognition.onend = () => {
+      recognizing = false;
+      if (micActive) {
+        try { recognition.start(); } catch (_) {}
+      } else {
+        micBtn.classList.remove("listening");
+      }
+    };
+
+    // Only stop on unrecoverable errors (permission denied).
+    // Transient errors (no-speech, network) let onend handle the retry.
+    recognition.onerror = (e) => {
+      if (e.error === "not-allowed" || e.error === "service-not-allowed") {
+        micActive = false;
+      }
+    };
+
+    micBtn.addEventListener("click", () => {
+      if (streaming) return;
+      if (micActive) {
+        micActive = false;
+        recognition.stop();
+      } else {
+        micActive = true;
+        accumulatedText = userInput.value.trim();
+        micBtn.classList.add("listening");
+        window.speechSynthesis.cancel();
+        try { recognition.start(); } catch (_) {}
+      }
+    });
+  } else {
+    micBtn.disabled = true;
+    micBtn.title = "Speech recognition not supported in this browser";
+  }
+
+  interviewPrompt.addEventListener("input", () => {
+    startBtn.disabled = !interviewPrompt.value.trim();
   });
 
   // Start interview
   startBtn.addEventListener("click", () => {
-    resume = resumeText.value.trim() || resume;
+    resume = interviewPrompt.value.trim();
     if (!resume) return;
     messages = [];
     messagesEl.innerHTML = "";
@@ -331,14 +451,14 @@
   });
 
   restartBtn.addEventListener("click", () => {
+    window.speechSynthesis.cancel();
+    if (recognizing) recognition?.stop();
     chatEl.style.display = "none";
     setupEl.style.display = "flex";
     resume = "";
-    resumeText.value = "";
-    pdfInput.value = "";
-    pdfStatus.textContent = "";
+    interviewPrompt.value = "";
     messages = [];
-    checkResume();
+    startBtn.disabled = true;
   });
 
   // Auto-resize textarea
@@ -378,6 +498,7 @@
     userInput.value = "";
     userInput.style.height = "44px";
     sendBtn.disabled = true;
+    recognition?.stop();
 
     addMessage("user", text);
     messages.push({ role: "user", content: text });
@@ -387,6 +508,7 @@
   async function streamResponse() {
     streaming = true;
     sendBtn.disabled = true;
+    micBtn.disabled = true;
     const msgDiv = addMessage("assistant", "", true);
 
     try {
@@ -432,12 +554,16 @@
       }
 
       msgDiv.classList.remove("streaming");
-      if (fullText) messages.push({ role: "assistant", content: fullText });
+      if (fullText) {
+        messages.push({ role: "assistant", content: fullText });
+        speak(fullText);
+      }
     } catch (err) {
       msgDiv.textContent = "Connection error — please try again.";
       msgDiv.classList.remove("streaming");
     } finally {
       streaming = false;
+      micBtn.disabled = false;
       sendBtn.disabled = !userInput.value.trim();
     }
   }
